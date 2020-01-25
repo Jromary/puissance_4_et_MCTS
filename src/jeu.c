@@ -11,7 +11,7 @@
 #include <time.h>
 
 // Paramètres du jeu
-#define LARGEUR_MAX 9       // nb max de fils pour un noeud (= nb max de coups possibles)
+#define LARGEUR_MAX 7       // nb max de fils pour un noeud (= nb max de coups possibles)
 
 #define TEMPS 5     // temps de calcul pour un coup avec MCTS (en secondes)
 
@@ -110,9 +110,6 @@ void afficheJeu(Etat *etat) {
 Coup *nouveauCoup(int i, int j) {
     Coup *coup = (Coup *) malloc(sizeof(Coup));
 
-    // TODO: à compléter avec la création d'un nouveau coup
-
-    /* par exemple : */
     coup->ligne = i;
     coup->colonne = j;
 
@@ -120,18 +117,22 @@ Coup *nouveauCoup(int i, int j) {
 }
 
 // Demander à l'humain quel coup jouer
-Coup *demanderCoup() {
+Coup *demanderCoup(Etat *etat) {
 
     // TODO...
 
     /* par exemple : */
     int i, j;
-    printf("\n quelle ligne ? ");
-    scanf("%d", &i);
     printf(" quelle colonne ? ");
     scanf("%d", &j);
+    for (i = 0; i < HEIGHT; ++i) {
+        if (etat->plateau[i][j] != ' '){
+            break;
+        }
+    }
+    printf("%d", i-1);
 
-    return nouveauCoup(i, j);
+    return nouveauCoup(i-1, j);
 }
 
 // Modifier l'état en jouant un coup
@@ -160,18 +161,18 @@ Coup **coups_possibles(Etat *etat) {
     Coup **coups = (Coup **) malloc((1 + LARGEUR_MAX) * sizeof(Coup *));
 
     int k = 0;
-
-    // TODO: à compléter
-
-    /* par exemple */
     int i, j;
-    for (i = 0; i < WIDTH; i++) {
-        if (etat->plateau[i][0] == ' ') { // TODO: Ajouter a la bonne hauteur et non a la hauteur 0
-            coups[k] = nouveauCoup(i, 0);// TODO: Verifier que la colone n'est pas pleine
+    for (j = 0; j < WIDTH; j++) {
+        for (i = 0; i < HEIGHT; ++i) {
+            if (etat->plateau[i][j] != ' '){
+                break;
+            }
+        }
+        if (i > 0){
+            coups[k] = nouveauCoup(i-1, j);
             k++;
         }
     }
-    /* fin de l'exemple */
 
     coups[k] = NULL;
 
@@ -379,7 +380,7 @@ int main(void) {
             // tour de l'humain
 
             do {
-                coup = demanderCoup();
+                coup = demanderCoup(etat);
             } while (!jouerCoup(etat, coup));
 
         } else {
