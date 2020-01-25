@@ -86,24 +86,20 @@ Etat *etat_initial(void) {
 
 
 void afficheJeu(Etat *etat) {
-
-    // TODO: à compléter
-
-    /* par exemple : */
     int i, j;
-    printf("   |");
+    printf("|");
     for (j = 0; j < WIDTH; j++)
         printf(" %d |", j);
     printf("\n");
-    printf("----------------");
+    printf("-----------------------------");
     printf("\n");
 
     for (i = 0; i < WIDTH; i++) {
-        printf(" %d |", i);
+        printf("|");
         for (j = 0; j < HEIGHT; j++)
             printf(" %c |", etat->plateau[i][j]);
         printf("\n");
-        printf("----------------");
+        printf("-----------------------------");
         printf("\n");
     }
 }
