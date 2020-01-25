@@ -130,7 +130,6 @@ Coup *demanderCoup(Etat *etat) {
             break;
         }
     }
-    printf("%d", i-1);
 
     return nouveauCoup(i-1, j);
 }
