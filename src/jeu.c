@@ -248,9 +248,17 @@ FinDePartie testFin(Etat *etat) {
                 if(k == 4){
                     return (etat->plateau[i][j] == 'O')? ORDI_GAGNE : HUMAIN_GAGNE;
                 }
-                //test des diagonales
+                //test des diagonales : \
                 k = 0;
                 while(k < 4 && i + k < WIDTH && j + k < HEIGHT && etat->plateau[i + k][j + k] == etat->plateau[i][j]){
+                    k++;
+                }
+                if(k == 4){
+                    return (etat->plateau[i][j] == 'O')? ORDI_GAGNE : HUMAIN_GAGNE;
+                }
+                //test des diagonales : /
+                k = 0;
+                while(k < 4 && i - k >= 0 && j + k < HEIGHT && etat->plateau[i - k][j + k] == etat->plateau[i][j]){
                     k++;
                 }
                 if(k == 4){
