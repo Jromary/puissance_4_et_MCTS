@@ -16,7 +16,7 @@
 #define TEMPS 5     // temps de calcul pour un coup avec MCTS (en secondes)
 
 #define WIDTH 7
-#define HEIGHT 7
+#define HEIGHT 6
 
 // macros
 #define AUTRE_JOUEUR(i) (1-(i))
@@ -52,8 +52,8 @@ Etat *copieEtat(Etat *src) {
     etat->joueur = src->joueur;
     /* par exemple : */
     int i, j;
-    for (i = 0; i < WIDTH; i++)
-        for (j = 0; j < HEIGHT; j++)
+    for (i = 0; i < HEIGHT; i++)
+        for (j = 0; j < WIDTH; j++)
             etat->plateau[i][j] = src->plateau[i][j];
 
 
@@ -64,8 +64,8 @@ Etat *copieEtat(Etat *src) {
 Etat *etat_initial(void) {
     Etat *etat = (Etat *) malloc(sizeof(Etat));
     int i, j;
-    for (i = 0; i < WIDTH; i++)
-        for (j = 0; j < HEIGHT; j++)
+    for (i = 0; i < HEIGHT; i++)
+        for (j = 0; j < WIDTH; j++)
             etat->plateau[i][j] = ' ';
 
     return etat;
@@ -81,9 +81,9 @@ void afficheJeu(Etat *etat) {
     printf("-----------------------------");
     printf("\n");
 
-    for (i = 0; i < WIDTH; i++) {
+    for (i = 0; i < HEIGHT; i++) {
         printf("|");
-        for (j = 0; j < HEIGHT; j++)
+        for (j = 0; j < WIDTH; j++)
             printf(" %c |", etat->plateau[i][j]);
         printf("\n");
         printf("-----------------------------");
@@ -227,12 +227,12 @@ void freeNoeud(Noeud *noeud) {
 // et retourne NON, MATCHNUL, ORDI_GAGNE ou HUMAIN_GAGNE
 FinDePartie testFin(Etat *etat) {
     int n, k = 0;
-    for (int i = 0; i < WIDTH; ++i) {
-        for (int j = 0; j < HEIGHT; ++j) {
+    for (int i = 0; i < HEIGHT; ++i) {
+        for (int j = 0; j < WIDTH; ++j) {
             if (etat->plateau[i][j] != ' '){
                 //compte le nombre de coup
                 n++;
-                //test des lignes
+                //test des colones
                 k = 0;
                 while(k < 4 && i + k < WIDTH && etat->plateau[i + k][j] == etat->plateau[i][j]){
                     k++;
@@ -240,7 +240,7 @@ FinDePartie testFin(Etat *etat) {
                 if(k == 4){
                     return (etat->plateau[i][j] == 'O')? ORDI_GAGNE : HUMAIN_GAGNE;
                 }
-                //test des colones
+                //test des lignes
                 k = 0;
                 while(k < 4 && j + k < HEIGHT && etat->plateau[i][j + k] == etat->plateau[i][j]){
                     k++;
