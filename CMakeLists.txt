@@ -5,3 +5,4 @@ set(CMAKE_C_STANDARD 11)
 
 add_executable(puissance_4_et_MCTS
         src/jeu.c)
+target_link_libraries(puissance_4_et_MCTS m)

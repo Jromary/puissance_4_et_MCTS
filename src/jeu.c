@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <time.h>
+#include <stdbool.h>
 
 // Paramètres du jeu
 #define LARGEUR_MAX 7       // nb max de fils pour un noeud (= nb max de coups possibles)
@@ -167,7 +168,7 @@ typedef struct NoeudSt {
     int nb_enfants; // nb d'enfants présents dans la liste
 
     // POUR MCTS:
-    int nb_victoires;
+    float nb_victoires;
     int nb_simus;
 
 } Noeud;
@@ -296,29 +297,94 @@ void ordijoue_mcts(Etat *etat, int tempsmax) {
     }
 
 
-    meilleur_coup = coups[rand() % k]; // choix aléatoire
+    // meilleur_coup = coups[rand() % k]; // choix aléatoire
 
-    /*  TODO :
-        - supprimer la sélection aléatoire du meilleur coup ci-dessus
-        - implémenter l'algorithme MCTS-UCT pour déterminer le meilleur coup ci-dessous
+    //TODO :
+    //    - supprimer la sélection aléatoire du meilleur coup ci-dessus
+    //    - implémenter l'algorithme MCTS-UCT pour déterminer le meilleur coup ci-dessous
 
     int iter = 0;
 
     do {
+        // Selectioner le noeud avec la plus grande B-Valeur recurcivement jusqu'a un fils sans B-valeur
+        float maxBvaleur = 0;
+        Noeud *noeudMaxBvaleur;
+        bool trouve = false;
+        Noeud *noeudCourant = racine;
+        Noeud enfantsTrouve[LARGEUR_MAX];
+        int nbEnfantsTrouve = 0;
 
+        while(!trouve){
+            for (int i = 0; i < noeudCourant->nb_enfants; ++i) {
+                Noeud* noeudEnfantCourant = noeudCourant->enfants[i];
+                if (noeudEnfantCourant->nb_simus == 0){
+                    trouve = true;
+                    enfantsTrouve[nbEnfantsTrouve] = *noeudEnfantCourant;
+                    nbEnfantsTrouve++;
+                } else{
+                    //TODO: calcul de b valeur
+                    float muI = noeudEnfantCourant->nb_victoires / noeudEnfantCourant->nb_simus;
+                    float Bvaleur = muI + sqrt(2)*sqrt(log(noeudCourant->nb_simus)/noeudEnfantCourant->nb_simus);
 
+                    if (Bvaleur > maxBvaleur){
+                        noeudMaxBvaleur = noeudEnfantCourant;
+                    }
+                }
+            }
+            if (!trouve){
+                noeudCourant = noeudMaxBvaleur;
+                if (noeudCourant->nb_enfants == 0){
+                    coups = coups_possibles(noeudCourant->etat);
+                    k = 0;
+                    while (coups[k] != NULL) {
+                        ajouterEnfant(noeudCourant, coups[k]);
+                        k++;
+                    }
+                }
+            }
+        }
 
-        // à compléter par l'algorithme MCTS-UCT...
+        // avec les fils sans B-Valeur => en choisir un aleatoirement
+        Noeud *noeudChoisi = &enfantsTrouve[rand() % nbEnfantsTrouve];
 
+        //simuler une partie aléatoire
+        Etat *etatDepart = copieEtat(noeudChoisi->etat);
 
-
+        while(testFin(etatDepart) == NON){
+            Coup **coupsDePartie = coups_possibles(etatDepart);
+            int nbCoups = 0;
+            while (coupsDePartie[nbCoups] != NULL) {
+                nbCoups++;
+            }
+            Coup* coupChoisi = coupsDePartie[rand() % nbCoups];
+            jouerCoup(etatDepart, coupChoisi);
+        }
+        // remonter la valeur sur tout les neuds parcouru jusqu'a la racine
+        FinDePartie resultat = testFin(etatDepart);
+        noeudCourant = noeudChoisi;
+        while(noeudCourant != NULL){
+            if (resultat == ORDI_GAGNE){
+                noeudCourant->nb_victoires += 1;
+            }
+            if (resultat == MATCHNUL){
+                noeudCourant->nb_victoires += 0.5f;
+            }
+            noeudCourant->nb_simus++;
+            noeudCourant = noeudCourant->parent;
+        }
 
         toc = clock();
         temps = (int)( ((double) (toc - tic)) / CLOCKS_PER_SEC );
         iter ++;
     } while ( temps < tempsmax );
 
-    /* fin de l'algorithme  */
+    //fin de l'algorithme
+    int maxN = 0;
+    for (int j = 0; j < racine->nb_enfants; ++j) {
+        if (racine->enfants[j]->nb_simus > maxN){
+            meilleur_coup = racine->enfants[j]->coup;
+        }
+    }
 
     // Jouer le meilleur premier coup
     jouerCoup(etat, meilleur_coup);
