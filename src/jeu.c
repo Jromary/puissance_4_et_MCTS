@@ -10,11 +10,12 @@
 #include <math.h>
 #include <time.h>
 #include <stdbool.h>
+#include <unistd.h>
 
 // Paramètres du jeu
 #define LARGEUR_MAX 7       // nb max de fils pour un noeud (= nb max de coups possibles)
 
-#define TEMPS 5     // temps de calcul pour un coup avec MCTS (en secondes)
+#define TEMPS 1     // temps de calcul pour un coup avec MCTS (en secondes)
 
 #define WIDTH 7
 #define HEIGHT 6
@@ -227,9 +228,10 @@ void freeNoeud(Noeud *noeud) {
 // Test si l'état est un état terminal
 // et retourne NON, MATCHNUL, ORDI_GAGNE ou HUMAIN_GAGNE
 FinDePartie testFin(Etat *etat) {
-    int n, k = 0;
-    for (int i = 0; i < HEIGHT; ++i) {
-        for (int j = 0; j < WIDTH; ++j) {
+    int n = 0;
+    int k = 0;
+    for (int i = 0; i < HEIGHT; i++) {
+        for (int j = 0; j < WIDTH; j++) {
             if (etat->plateau[i][j] != ' '){
                 //compte le nombre de coup
                 n++;
@@ -268,7 +270,7 @@ FinDePartie testFin(Etat *etat) {
             }
         }
     }
-    return (n == WIDTH * HEIGHT)? MATCHNUL: NON;
+    return (n >= WIDTH * HEIGHT)? MATCHNUL: NON;
 }
 
 
@@ -311,7 +313,7 @@ void ordijoue_mcts(Etat *etat, int tempsmax) {
         Noeud *noeudMaxBvaleur;
         bool trouve = false;
         Noeud *noeudCourant = racine;
-        Noeud enfantsTrouve[LARGEUR_MAX];
+        Noeud *enfantsTrouve[LARGEUR_MAX];
         int nbEnfantsTrouve = 0;
 
         while(!trouve){
@@ -319,11 +321,11 @@ void ordijoue_mcts(Etat *etat, int tempsmax) {
                 Noeud* noeudEnfantCourant = noeudCourant->enfants[i];
                 if (noeudEnfantCourant->nb_simus == 0){
                     trouve = true;
-                    enfantsTrouve[nbEnfantsTrouve] = *noeudEnfantCourant;
+                    enfantsTrouve[nbEnfantsTrouve] = noeudEnfantCourant;
                     nbEnfantsTrouve++;
                 } else{
-                    //TODO: calcul de b valeur
-                    float muI = noeudEnfantCourant->nb_victoires / noeudEnfantCourant->nb_simus;
+
+                    float muI = (float)noeudEnfantCourant->nb_victoires / (float)noeudEnfantCourant->nb_simus;
                     float Bvaleur = muI + sqrt(2)*sqrt(log(noeudCourant->nb_simus)/noeudEnfantCourant->nb_simus);
 
                     if (Bvaleur > maxBvaleur){
@@ -345,7 +347,7 @@ void ordijoue_mcts(Etat *etat, int tempsmax) {
         }
 
         // avec les fils sans B-Valeur => en choisir un aleatoirement
-        Noeud *noeudChoisi = &enfantsTrouve[rand() % nbEnfantsTrouve];
+        Noeud *noeudChoisi = enfantsTrouve[rand() % nbEnfantsTrouve];
 
         //simuler une partie aléatoire
         Etat *etatDepart = copieEtat(noeudChoisi->etat);
@@ -359,6 +361,7 @@ void ordijoue_mcts(Etat *etat, int tempsmax) {
             Coup* coupChoisi = coupsDePartie[rand() % nbCoups];
             jouerCoup(etatDepart, coupChoisi);
         }
+
         // remonter la valeur sur tout les neuds parcouru jusqu'a la racine
         FinDePartie resultat = testFin(etatDepart);
         noeudCourant = noeudChoisi;
@@ -372,6 +375,7 @@ void ordijoue_mcts(Etat *etat, int tempsmax) {
             noeudCourant->nb_simus++;
             noeudCourant = noeudCourant->parent;
         }
+        free(etatDepart);
 
         toc = clock();
         temps = (int)( ((double) (toc - tic)) / CLOCKS_PER_SEC );
@@ -383,6 +387,7 @@ void ordijoue_mcts(Etat *etat, int tempsmax) {
     for (int j = 0; j < racine->nb_enfants; ++j) {
         if (racine->enfants[j]->nb_simus > maxN){
             meilleur_coup = racine->enfants[j]->coup;
+            maxN = racine->enfants[j]->nb_simus;
         }
     }
 
