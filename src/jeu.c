@@ -281,6 +281,7 @@ void ordijoue_mcts(Etat *etat, int tempsmax) {
     clock_t tic, toc;
     tic = clock();
     int temps;
+    srand(time(NULL));
 
     Coup **coups;
     Coup *meilleur_coup;
@@ -291,6 +292,8 @@ void ordijoue_mcts(Etat *etat, int tempsmax) {
 
     // créer les premiers noeuds:
     coups = coups_possibles(racine->etat);
+
+
     int k = 0;
     Noeud *enfant;
     while (coups[k] != NULL) {
@@ -317,32 +320,39 @@ void ordijoue_mcts(Etat *etat, int tempsmax) {
         int nbEnfantsTrouve = 0;
 
         while(!trouve){
-            for (int i = 0; i < noeudCourant->nb_enfants; ++i) {
-                Noeud* noeudEnfantCourant = noeudCourant->enfants[i];
-                if (noeudEnfantCourant->nb_simus == 0){
-                    trouve = true;
-                    enfantsTrouve[nbEnfantsTrouve] = noeudEnfantCourant;
-                    nbEnfantsTrouve++;
-                } else{
+            if (testFin(noeudCourant->etat) == NON) {
+                for (int i = 0; i < noeudCourant->nb_enfants; ++i) {
+                    Noeud *noeudEnfantCourant = noeudCourant->enfants[i];
+                    if (noeudEnfantCourant->nb_simus == 0) {
+                        trouve = true;
+                        enfantsTrouve[nbEnfantsTrouve] = noeudEnfantCourant;
+                        nbEnfantsTrouve++;
+                    } else {
 
-                    float muI = (float)noeudEnfantCourant->nb_victoires / (float)noeudEnfantCourant->nb_simus;
-                    float Bvaleur = muI + sqrt(2)*sqrt(log(noeudCourant->nb_simus)/noeudEnfantCourant->nb_simus);
+                        float muI = (float) noeudEnfantCourant->nb_victoires / (float) noeudEnfantCourant->nb_simus;
+                        float Bvaleur =
+                                muI + sqrt(2) * sqrt(log(noeudCourant->nb_simus) / noeudEnfantCourant->nb_simus);
 
-                    if (Bvaleur > maxBvaleur){
-                        noeudMaxBvaleur = noeudEnfantCourant;
+                        if (Bvaleur > maxBvaleur) {
+                            noeudMaxBvaleur = noeudEnfantCourant;
+                        }
                     }
                 }
-            }
-            if (!trouve){
-                noeudCourant = noeudMaxBvaleur;
-                if (noeudCourant->nb_enfants == 0){
-                    coups = coups_possibles(noeudCourant->etat);
-                    k = 0;
-                    while (coups[k] != NULL) {
-                        ajouterEnfant(noeudCourant, coups[k]);
-                        k++;
+                if (!trouve) {
+                    noeudCourant = noeudMaxBvaleur;
+                    if (noeudCourant->nb_enfants == 0) {
+                        coups = coups_possibles(noeudCourant->etat);
+                        k = 0;
+                        while (coups[k] != NULL) {
+                            ajouterEnfant(noeudCourant, coups[k]);
+                            k++;
+                        }
                     }
                 }
+            }else{
+                enfantsTrouve[nbEnfantsTrouve] = noeudCourant;
+                nbEnfantsTrouve++;
+                trouve = true;
             }
         }
 
@@ -375,12 +385,14 @@ void ordijoue_mcts(Etat *etat, int tempsmax) {
             noeudCourant->nb_simus++;
             noeudCourant = noeudCourant->parent;
         }
+
         free(etatDepart);
+
 
         toc = clock();
         temps = (int)( ((double) (toc - tic)) / CLOCKS_PER_SEC );
         iter ++;
-    } while ( temps < tempsmax );
+    } while (temps < tempsmax);
 
     //fin de l'algorithme
     int maxN = 0;
@@ -415,6 +427,11 @@ int main(void) {
     do {
         printf("\n");
         afficheJeu(etat);
+        Coup** coup2 = coups_possibles(etat);
+        /*printf("Coup possible(s):\n");
+        for (int i = 0; i < 7; ++i) {
+            printf("{%d | %d}",coup2[i]->colonne, coup2[i]->ligne);
+        }*/
 
         if (etat->joueur == 0) {
             // tour de l'humain
