@@ -400,9 +400,7 @@ void ordijoue_mcts(Etat *etat, int tempsmax) {
 
     //fin de l'algorithme
     int maxN = 0;
-	printf("nb enfants = %d\n", racine->nb_enfants);
     for (int j = 0; j < racine->nb_enfants; j++) {
-		printf("enfant %d :  simus = %d\n", j, racine->enfants[j]->nb_simus);
         if (racine->enfants[j]->nb_simus > maxN){
             meilleur_coup = racine->enfants[j]->coup;
             maxN = racine->enfants[j]->nb_simus;
