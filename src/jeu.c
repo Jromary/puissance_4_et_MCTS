@@ -409,6 +409,9 @@ void ordijoue_mcts(Etat *etat, int tempsmax) {
 
     // Jouer le meilleur premier coup
     jouerCoup(etat, meilleur_coup);
+	
+	printf("nombre de simulations : %d\n", iter);
+	printf("estimation de la probabilité de victoire pour l'ordinateur %f \n", racine->nb_victoires/(float)racine->nb_simus);
 
     // Penser à libérer la mémoire :
     freeNoeud(racine);
