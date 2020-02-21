@@ -309,6 +309,7 @@ void ordijoue_mcts(Etat *etat, int tempsmax) {
     //    - implémenter l'algorithme MCTS-UCT pour déterminer le meilleur coup ci-dessous
 
     int iter = 0;
+	
 
     do {
         // Selectioner le noeud avec la plus grande B-Valeur recurcivement jusqu'a un fils sans B-valeur
@@ -319,7 +320,11 @@ void ordijoue_mcts(Etat *etat, int tempsmax) {
         Noeud *enfantsTrouve[LARGEUR_MAX];
         int nbEnfantsTrouve = 0;
 
+		int a = 1;
+		
         while(!trouve){
+			a++;
+			maxBvaleur = 0;
             if (testFin(noeudCourant->etat) == NON) {
                 for (int i = 0; i < noeudCourant->nb_enfants; ++i) {
                     Noeud *noeudEnfantCourant = noeudCourant->enfants[i];
@@ -328,12 +333,11 @@ void ordijoue_mcts(Etat *etat, int tempsmax) {
                         enfantsTrouve[nbEnfantsTrouve] = noeudEnfantCourant;
                         nbEnfantsTrouve++;
                     } else {
-
                         float muI = (float) noeudEnfantCourant->nb_victoires / (float) noeudEnfantCourant->nb_simus;
                         float Bvaleur =
                                 muI + sqrt(2) * sqrt(log(noeudCourant->nb_simus) / noeudEnfantCourant->nb_simus);
-
-                        if (Bvaleur > maxBvaleur) {
+						if (Bvaleur > maxBvaleur) {
+							maxBvaleur = Bvaleur;
                             noeudMaxBvaleur = noeudEnfantCourant;
                         }
                     }
@@ -387,7 +391,7 @@ void ordijoue_mcts(Etat *etat, int tempsmax) {
         }
 
         free(etatDepart);
-
+	
 
         toc = clock();
         temps = (int)( ((double) (toc - tic)) / CLOCKS_PER_SEC );
@@ -396,7 +400,9 @@ void ordijoue_mcts(Etat *etat, int tempsmax) {
 
     //fin de l'algorithme
     int maxN = 0;
-    for (int j = 0; j < racine->nb_enfants; ++j) {
+	printf("nb enfants = %d\n", racine->nb_enfants);
+    for (int j = 0; j < racine->nb_enfants; j++) {
+		printf("enfant %d :  simus = %d\n", j, racine->enfants[j]->nb_simus);
         if (racine->enfants[j]->nb_simus > maxN){
             meilleur_coup = racine->enfants[j]->coup;
             maxN = racine->enfants[j]->nb_simus;
