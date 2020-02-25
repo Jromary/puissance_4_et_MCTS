@@ -33,7 +33,7 @@ typedef enum {
 // Definition du type Etat (état/position du jeu)
 typedef struct EtatSt {
 
-    int joueur; // à qui de jouer ?
+    int joueur; // à qui de jouer ? 
     /* par exemple, pour morpion: */
     char plateau[HEIGHT][WIDTH];
 
@@ -75,6 +75,7 @@ Etat *etat_initial(void) {
 
 
 void afficheJeu(Etat *etat) {
+	fflush(stdout);
     int i, j;
     printf("|");
     for (j = 0; j < WIDTH; j++)
@@ -237,7 +238,7 @@ FinDePartie testFin(Etat *etat) {
                 n++;
                 //test des colones
                 k = 0;
-                while(k < 4 && i + k < WIDTH && etat->plateau[i + k][j] == etat->plateau[i][j]){
+                while(k < 4 && i + k < HEIGHT && etat->plateau[i + k][j] == etat->plateau[i][j]){
                     k++;
                 }
                 if(k == 4){
@@ -245,15 +246,15 @@ FinDePartie testFin(Etat *etat) {
                 }
                 //test des lignes
                 k = 0;
-                while(k < 4 && j + k < HEIGHT && etat->plateau[i][j + k] == etat->plateau[i][j]){
+                while(k < 4 && j + k < WIDTH && etat->plateau[i][j + k] == etat->plateau[i][j]){
                     k++;
                 }
                 if(k == 4){
                     return (etat->plateau[i][j] == 'O')? ORDI_GAGNE : HUMAIN_GAGNE;
                 }
-                //test des diagonales : \
+                //test des diagonales : \.
                 k = 0;
-                while(k < 4 && i + k < WIDTH && j + k < HEIGHT && etat->plateau[i + k][j + k] == etat->plateau[i][j]){
+                while(k < 4 && i + k < HEIGHT && j + k < HEIGHT && etat->plateau[i + k][j + k] == etat->plateau[i][j]){
                     k++;
                 }
                 if(k == 4){
@@ -261,7 +262,7 @@ FinDePartie testFin(Etat *etat) {
                 }
                 //test des diagonales : /
                 k = 0;
-                while(k < 4 && i - k >= 0 && j + k < HEIGHT && etat->plateau[i - k][j + k] == etat->plateau[i][j]){
+                while(k < 4 && i - k >= 0 && j + k < WIDTH && etat->plateau[i - k][j + k] == etat->plateau[i][j]){
                     k++;
                 }
                 if(k == 4){
@@ -364,7 +365,7 @@ void ordijoue_mcts(Etat *etat, int tempsmax) {
         Noeud *noeudChoisi = enfantsTrouve[rand() % nbEnfantsTrouve];
 
         //simuler une partie aléatoire
-        Etat *etatDepart = copieEtat(noeudChoisi->etat);
+        /*Etat *etatDepart = copieEtat(noeudChoisi->etat);
 
         while(testFin(etatDepart) == NON){
             Coup **coupsDePartie = coups_possibles(etatDepart);
@@ -374,6 +375,34 @@ void ordijoue_mcts(Etat *etat, int tempsmax) {
             }
             Coup* coupChoisi = coupsDePartie[rand() % nbCoups];
             jouerCoup(etatDepart, coupChoisi);
+        }
+		*/
+		
+		//simuler une partie aléatoire
+        Etat *etatDepart = copieEtat(noeudChoisi->etat);
+        Etat *etatFuture = copieEtat(etatDepart);
+        bool etatFuturEstFinal = false;
+
+        while(testFin(etatDepart) == NON){
+			etatFuturEstFinal = false;
+            Coup **coupsDePartie = coups_possibles(etatDepart);
+            int nbCoups = 0;
+            while (coupsDePartie[nbCoups] != NULL) {
+                nbCoups++;
+            }
+            for (int i = 0; i < nbCoups; i++) {
+                etatFuture = copieEtat(etatDepart);
+                jouerCoup(etatFuture, coupsDePartie[i]);
+                if (testFin(etatFuture) == ORDI_GAGNE){
+                    etatFuturEstFinal = true;
+                    jouerCoup(etatDepart, coupsDePartie[i]);
+                    break;
+                }
+            }
+            if (!etatFuturEstFinal){
+                Coup* coupChoisi = coupsDePartie[rand() % nbCoups];
+                jouerCoup(etatDepart, coupChoisi);
+            }
         }
 
         // remonter la valeur sur tout les neuds parcouru jusqu'a la racine
@@ -401,7 +430,7 @@ void ordijoue_mcts(Etat *etat, int tempsmax) {
     //fin de l'algorithme
     int maxN = 0;
     for (int j = 0; j < racine->nb_enfants; j++) {
-        if (racine->enfants[j]->nb_simus > maxN){
+        if (racine->enfants[j]->nb_victoires > maxN){
             meilleur_coup = racine->enfants[j]->coup;
             maxN = racine->enfants[j]->nb_simus;
         }
@@ -410,7 +439,7 @@ void ordijoue_mcts(Etat *etat, int tempsmax) {
     // Jouer le meilleur premier coup
     jouerCoup(etat, meilleur_coup);
 	
-	printf("nombre de simulations : %d\n", iter);
+	printf("\nnombre de simulations : %d\n", iter);
 	printf("estimation de la probabilité de victoire pour l'ordinateur %f \n", racine->nb_victoires/(float)racine->nb_simus);
 
     // Penser à libérer la mémoire :
