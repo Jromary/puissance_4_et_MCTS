@@ -11,6 +11,7 @@
 #include <time.h>
 #include <stdbool.h>
 #include <unistd.h>
+#include <limits.h>
 
 // Paramètres du jeu
 #define LARGEUR_MAX 7       // nb max de fils pour un noeud (= nb max de coups possibles)
@@ -325,7 +326,7 @@ void ordijoue_mcts(Etat *etat, int tempsmax) {
 		
         while(!trouve){
 			a++;
-			maxBvaleur = 0;
+			maxBvaleur = INT_MIN;
             if (testFin(noeudCourant->etat) == NON) {
                 for (int i = 0; i < noeudCourant->nb_enfants; ++i) {
                     Noeud *noeudEnfantCourant = noeudCourant->enfants[i];
@@ -335,6 +336,9 @@ void ordijoue_mcts(Etat *etat, int tempsmax) {
                         nbEnfantsTrouve++;
                     } else {
                         float muI = (float) noeudEnfantCourant->nb_victoires / (float) noeudEnfantCourant->nb_simus;
+                        if (noeudEnfantCourant->joueur == 0){
+                            muI = -muI;
+                        }
                         float Bvaleur =
                                 muI + sqrt(2) * sqrt(log(noeudCourant->nb_simus) / noeudEnfantCourant->nb_simus);
 						if (Bvaleur > maxBvaleur) {
