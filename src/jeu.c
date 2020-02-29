@@ -1,9 +1,7 @@
 /*
     Canvas pour algorithmes de jeux à 2 joueurs
-
     joueur 0 : humain
     joueur 1 : ordinateur
-
 */
 #include <stdio.h>
 #include <stdlib.h>
@@ -20,6 +18,11 @@
 
 #define WIDTH 7
 #define HEIGHT 6
+
+#define STRAT_MAX 0
+#define AFFICHE_STAT 1
+#define SANS_AMELIORATION 0
+
 
 // macros
 #define AUTRE_JOUEUR(i) (1-(i))
@@ -276,6 +279,12 @@ FinDePartie testFin(Etat *etat) {
 }
 
 
+int strategie;
+int amelioration;
+int tmp_ordi;
+int statistique;
+
+
 // Calcule et joue un coup de l'ordinateur avec MCTS-UCT
 // en tempsmax secondes
 void ordijoue_mcts(Etat *etat, int tempsmax) {
@@ -369,45 +378,45 @@ void ordijoue_mcts(Etat *etat, int tempsmax) {
         Noeud *noeudChoisi = enfantsTrouve[rand() % nbEnfantsTrouve];
 
         //simuler une partie aléatoire
-        /*Etat *etatDepart = copieEtat(noeudChoisi->etat);
-
-        while(testFin(etatDepart) == NON){
-            Coup **coupsDePartie = coups_possibles(etatDepart);
-            int nbCoups = 0;
-            while (coupsDePartie[nbCoups] != NULL) {
-                nbCoups++;
-            }
-            Coup* coupChoisi = coupsDePartie[rand() % nbCoups];
-            jouerCoup(etatDepart, coupChoisi);
-        }
-		*/
-		
-		//simuler une partie aléatoire
         Etat *etatDepart = copieEtat(noeudChoisi->etat);
-        Etat *etatFuture = copieEtat(etatDepart);
-        bool etatFuturEstFinal = false;
-
-        while(testFin(etatDepart) == NON){
-			etatFuturEstFinal = false;
-            Coup **coupsDePartie = coups_possibles(etatDepart);
-            int nbCoups = 0;
-            while (coupsDePartie[nbCoups] != NULL) {
-                nbCoups++;
-            }
-            for (int i = 0; i < nbCoups; i++) {
-                etatFuture = copieEtat(etatDepart);
-                jouerCoup(etatFuture, coupsDePartie[i]);
-                if (testFin(etatFuture) == ORDI_GAGNE){
-                    etatFuturEstFinal = true;
-                    jouerCoup(etatDepart, coupsDePartie[i]);
-                    break;
-                }
-            }
-            if (!etatFuturEstFinal){
-                Coup* coupChoisi = coupsDePartie[rand() % nbCoups];
-                jouerCoup(etatDepart, coupChoisi);
-            }
-        }
+		
+		if (amelioration == SANS_AMELIORATION) {
+			while(testFin(etatDepart) == NON){
+				Coup **coupsDePartie = coups_possibles(etatDepart);
+				int nbCoups = 0;
+				while (coupsDePartie[nbCoups] != NULL) {
+					nbCoups++;
+				}
+				Coup* coupChoisi = coupsDePartie[rand() % nbCoups];
+				jouerCoup(etatDepart, coupChoisi);
+			}
+		
+	
+		} else { //avec amélioration
+			Etat *etatFuture = copieEtat(etatDepart);
+			bool etatFuturEstFinal = false;
+			while(testFin(etatDepart) == NON){
+				etatFuturEstFinal = false;
+				Coup **coupsDePartie = coups_possibles(etatDepart);
+				int nbCoups = 0;
+				while (coupsDePartie[nbCoups] != NULL) {
+					nbCoups++;
+				}
+				for (int i = 0; i < nbCoups; i++) {
+					etatFuture = copieEtat(etatDepart);
+					jouerCoup(etatFuture, coupsDePartie[i]);
+					if (testFin(etatFuture) == ORDI_GAGNE){
+						etatFuturEstFinal = true;
+						jouerCoup(etatDepart, coupsDePartie[i]);
+						break;
+					}
+				}
+				if (!etatFuturEstFinal){
+					Coup* coupChoisi = coupsDePartie[rand() % nbCoups];
+					jouerCoup(etatDepart, coupChoisi);
+				}
+			}
+		}
 
         // remonter la valeur sur tout les neuds parcouru jusqu'a la racine
         FinDePartie resultat = testFin(etatDepart);
@@ -434,7 +443,10 @@ void ordijoue_mcts(Etat *etat, int tempsmax) {
     //fin de l'algorithme
     int maxN = 0;
     for (int j = 0; j < racine->nb_enfants; j++) {
-        if (racine->enfants[j]->nb_victoires > maxN){
+		int nb;
+		if(strategie == STRAT_MAX) nb = racine->enfants[j]->nb_simus;
+		else nb = racine->enfants[j]->nb_victoires;
+        if (nb > maxN){
             meilleur_coup = racine->enfants[j]->coup;
             maxN = racine->enfants[j]->nb_simus;
         }
@@ -443,9 +455,11 @@ void ordijoue_mcts(Etat *etat, int tempsmax) {
     // Jouer le meilleur premier coup
     jouerCoup(etat, meilleur_coup);
 	
-	printf("\nnombre de simulations : %d\n", iter);
-	printf("estimation de la probabilité de victoire pour l'ordinateur %f \n", racine->nb_victoires/(float)racine->nb_simus);
-
+	if(statistique == AFFICHE_STAT) {
+		printf("\nnombre de simulations : %d\n", iter);
+		printf("estimation de la probabilité de victoire pour l'ordinateur %f \n", racine->nb_victoires/(float)racine->nb_simus);
+	}
+	
     // Penser à libérer la mémoire :
     freeNoeud(racine);
     free(coups);
@@ -462,6 +476,23 @@ int main(void) {
     // Choisir qui commence :
     printf("Qui commence (0 : humain, 1 : ordinateur) ? ");
     scanf("%d", &(etat->joueur));
+	
+    // Choisir robuste ou max :
+    printf("Quel stratégie (0 : robuste, 1 : max) ? ");
+    scanf("%d", &strategie);
+	
+    // Choisir simulation :
+    printf("Avec l'amélioration de la simulation (0 : non, 1 : oui) ? ");
+    scanf("%d", &amelioration);
+	
+    // Choisir nb seconde :
+    printf("Combien de temps l'ordinateur réflechit(en secondes) ? ");
+    scanf("%d", &tmp_ordi);
+	
+    // Choisir affichage stats :
+    printf("Affichage des statistiques (0 : non, 1 : oui) ? ");
+    scanf("%d", &statistique);
+	
 
     // boucle de jeu
     do {
@@ -483,7 +514,8 @@ int main(void) {
         } else {
             // tour de l'Ordinateur
 
-            ordijoue_mcts(etat, TEMPS);
+            // ordijoue_mcts(etat, TEMPS);
+            ordijoue_mcts(etat, tmp_ordi);
 
         }
 
