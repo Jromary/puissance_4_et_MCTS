@@ -332,18 +332,23 @@ void ordijoue_mcts(Etat *etat, int tempsmax) {
         int nbEnfantsTrouve = 0;
 
 		int a = 1;
-		
+		// tant que on n'a pas trouvé de noeud a exploré on cherche recursivement
         while(!trouve){
 			a++;
 			maxBvaleur = INT_MIN;
+            // si le noeud actuel n'est pas final
             if (testFin(noeudCourant->etat) == NON) {
+                // on parcours ses enfants
                 for (int i = 0; i < noeudCourant->nb_enfants; ++i) {
                     Noeud *noeudEnfantCourant = noeudCourant->enfants[i];
+                    // si il existe un enfant sans simulation on l'ajoute a la liste des enfants a simulé
+                    // et trouvé = true
                     if (noeudEnfantCourant->nb_simus == 0) {
                         trouve = true;
                         enfantsTrouve[nbEnfantsTrouve] = noeudEnfantCourant;
                         nbEnfantsTrouve++;
                     } else {
+                        // sinon on calcule la bvaleur de tout les fils et on sauvegarde le meilleur noeud
                         float muI = (float) noeudEnfantCourant->nb_victoires / (float) noeudEnfantCourant->nb_simus;
                         if (noeudEnfantCourant->joueur == 0){
                             muI = -muI;
@@ -356,6 +361,8 @@ void ordijoue_mcts(Etat *etat, int tempsmax) {
                         }
                     }
                 }
+                // si on a pas trouvé de fils sans simulation on prend celui avec la meilleur Bvaleur
+                // on cree alors tout ses fils si il n'en a pas
                 if (!trouve) {
                     noeudCourant = noeudMaxBvaleur;
                     if (noeudCourant->nb_enfants == 0) {
@@ -379,7 +386,8 @@ void ordijoue_mcts(Etat *etat, int tempsmax) {
 
         //simuler une partie aléatoire
         Etat *etatDepart = copieEtat(noeudChoisi->etat);
-		
+
+        // on ne prend pas un coup gagnant si il y en a un
 		if (amelioration == SANS_AMELIORATION) {
 			while(testFin(etatDepart) == NON){
 				Coup **coupsDePartie = coups_possibles(etatDepart);
@@ -402,6 +410,7 @@ void ordijoue_mcts(Etat *etat, int tempsmax) {
 				while (coupsDePartie[nbCoups] != NULL) {
 					nbCoups++;
 				}
+				//simulation de coup suivant pour choisir forcement le coup gagnant si il existe
 				for (int i = 0; i < nbCoups; i++) {
 					etatFuture = copieEtat(etatDepart);
 					jouerCoup(etatFuture, coupsDePartie[i]);
